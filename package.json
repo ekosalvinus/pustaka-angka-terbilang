@@ -40,6 +40,7 @@
     "build": "rm -rf dist && tsc && node scripts/fix-dts.mjs",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "release": "changeset publish",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "engines": {
@@ -54,6 +55,7 @@
     }
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "typescript": "^5.9.0",
     "vue": "^3.5.0"
   }
