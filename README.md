@@ -22,7 +22,7 @@ bun add pustaka-angka-terbilang
 Adapter Vue memakai `vue` yang sudah ada di proyek Anda (peer dependency opsional, Vue ≥ 3.3). Jika hanya memakai core, Vue tidak dibutuhkan.
 
 ## Mulai cepat
-
+ 
 ```ts
 import { terbilang, formatUang } from 'pustaka-angka-terbilang'
 
