@@ -405,7 +405,7 @@ npm publish      # otomatis typecheck + test + build lebih dulu
 ```
  
 Sebelum publish: aktifkan 2FA di akun npm (`npm profile enable-2fa auth-and-writes`) dan cek isi paket dengan `npm pack --dry-run`. Jika publish lewat GitHub Actions, gunakan `npm publish --provenance --access public`.
-
+ 
 ## Keamanan
 
 - **Bukan pengganti validasi server.** Masking dan terbilang hanya tampilan. Nominal tetap harus divalidasi ulang di backend (tipe, batas minimum/maksimum, tanda negatif).
