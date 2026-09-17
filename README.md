@@ -403,7 +403,7 @@ npm test         # butuh Node ≥ 22.6 (menjalankan TypeScript langsung)
 npm run build    # hasil ke dist/
 npm publish      # otomatis typecheck + test + build lebih dulu
 ```
-
+ 
 Sebelum publish: aktifkan 2FA di akun npm (`npm profile enable-2fa auth-and-writes`) dan cek isi paket dengan `npm pack --dry-run`. Jika publish lewat GitHub Actions, gunakan `npm publish --provenance --access public`.
  
 ## Keamanan
