@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Build and Publish to npm
 
 on:
   push:
@@ -6,16 +6,17 @@ on:
       - 'v*'
 
 jobs:
-  publish:
+  build-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # untuk npm provenance
+      id-token: write   # dibutuhkan untuk npm provenance
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -30,7 +31,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish
+      - name: Publish to npm
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
