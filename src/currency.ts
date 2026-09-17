@@ -23,3 +23,11 @@ export const CURRENCIES = {
 } satisfies Record<string, Currency>
 
 export type CurrencyCode = keyof typeof CURRENCIES
+
+/** Ambil definisi mata uang. Hanya properti milik tabel, jadi `'__proto__'`/`'toString'` ditolak. */
+export function getCurrency(code: unknown): Currency {
+  if (typeof code !== 'string' || !Object.prototype.hasOwnProperty.call(CURRENCIES, code)) {
+    throw new TypeError(`Mata uang tidak dikenal: ${String(code)}`)
+  }
+  return CURRENCIES[code as CurrencyCode]
+}

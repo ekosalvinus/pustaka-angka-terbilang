@@ -1,5 +1,5 @@
 import { bulat, gaya, parse, round, type Angka, type Gaya } from './core.ts'
-import { CURRENCIES, type CurrencyCode } from './currency.ts'
+import { getCurrency, type CurrencyCode } from './currency.ts'
 
 export interface TerbilangOptions extends Gaya {
   /**
@@ -18,8 +18,7 @@ function kata(v: Angka, o: TerbilangOptions): string {
   let p = parse(v)
   let out: string
   if (o.currency) {
-    const c = CURRENCIES[o.currency === true ? 'IDR' : o.currency]
-    if (!c) throw new TypeError(`Mata uang tidak dikenal: ${String(o.currency)}`)
+    const c = getCurrency(o.currency === true ? 'IDR' : o.currency)
     p = round(p, o.cents ? 2 : 0)
     out = bulat(p.int) + ' ' + c.name
     if (o.cents && p.frac !== '00') out += ' ' + bulat(BigInt(p.frac)) + ' ' + c.minor

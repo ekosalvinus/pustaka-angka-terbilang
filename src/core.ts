@@ -18,6 +18,11 @@ export interface Parsed {
 
 const SATUAN = ['nol', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan']
 export const SKALA = ['', 'ribu', 'juta', 'miliar', 'triliun', 'kuadriliun', 'kuintiliun', 'sekstiliun', 'septiliun', 'oktiliun', 'noniliun', 'desiliun']
+/**
+ * Batas panjang input (karakter / digit). Mencegah DoS: BigInt raksasa,
+ * rekursi dalam, dan regex pengelompokan ribuan yang O(n²).
+ */
+export const MAX_LENGTH = 1000
 const GOOGOL = 10n ** 100n
 const DESILIUN = 10n ** 33n
 
@@ -44,8 +49,11 @@ export function parse(v: Angka): Parsed {
   if (typeof v === 'bigint') s = v.toString()
   else if (typeof v === 'number') {
     if (!Number.isFinite(v)) throw new TypeError(`Bukan angka yang valid: ${v}`)
+    // Di luar batas ini number sudah kehilangan presisi sebelum sampai ke sini: nominal bisa salah diam-diam.
+    if (Math.abs(v) > Number.MAX_SAFE_INTEGER) throw new RangeError(`Angka melebihi Number.MAX_SAFE_INTEGER, kirim sebagai string atau BigInt: ${v}`)
     s = expand(String(v))
   } else if (typeof v === 'string') {
+    if (v.length > MAX_LENGTH) throw new RangeError(`Input melebihi ${MAX_LENGTH} karakter`)
     s = v.replace(/[\s_]/g, '')
     if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.')
     else if (s.indexOf('.') !== s.lastIndexOf('.')) s = s.replace(/\./g, '')
@@ -53,13 +61,21 @@ export function parse(v: Angka): Parsed {
 
   const m = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(s)
   if (!m || !(m[2] || m[3])) throw new TypeError(`Bukan angka yang valid: ${String(v)}`)
+  if (s.length > MAX_LENGTH) throw new RangeError(`Input melebihi ${MAX_LENGTH} digit`)
   const int = BigInt(m[2] || '0')
   const frac = m[3] ?? ''
   return { neg: m[1] === '-' && (int > 0n || /[1-9]/.test(frac)), int, frac }
 }
 
+/** Validasi jumlah digit desimal dari opsi pengguna. */
+export function checkDecimals(d: number): number {
+  if (!Number.isInteger(d) || d < 0 || d > 100) throw new RangeError(`decimals harus bilangan bulat 0-100: ${d}`)
+  return d
+}
+
 /** Bulatkan (half-up) ke `d` digit desimal. */
 export function round(p: Parsed, d: number): Parsed {
+  checkDecimals(d)
   const scale = 10n ** BigInt(d)
   const scaled = p.int * scale + BigInt(p.frac.padEnd(d, '0').slice(0, d) || '0') + (p.frac[d] >= '5' ? 1n : 0n)
   return {

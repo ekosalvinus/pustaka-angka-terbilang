@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   terbilang, terbilangPersen, tingkat, formatAngka, formatUang, formatRingkas,
-  maskRibuan, unmask, terbilangTanggal, terbilangWaktu, type Angka,
+  maskRibuan, unmask, terbilangTanggal, terbilangWaktu, CURRENCIES, type Angka,
 } from '../src/index.ts'
 
 const table = <T extends unknown[]>(name: string, rows: [...T, string][], fn: (...a: T) => string) =>
@@ -65,7 +65,7 @@ table<[Angka]>('terbilang bilangan bulat', [
   [E(36), 'seribu desiliun'],
   [E(36) + 1n, 'seribu desiliun satu'],
   [E(100), 'satu googol'],
-  [1e21, 'satu sekstiliun'],
+  ['1e21'.replace('1e21', '1' + '0'.repeat(21)), 'satu sekstiliun'],
   [Number.MAX_SAFE_INTEGER, 'sembilan kuadriliun tujuh triliun seratus sembilan puluh sembilan miliar dua ratus lima puluh empat juta tujuh ratus empat puluh ribu sembilan ratus sembilan puluh satu'],
 ], (v) => terbilang(v))
 
@@ -205,6 +205,8 @@ test('masking input', () => {
   assert.equal(maskRibuan('1.50a0.000'), '1.500.000')
   assert.equal(maskRibuan('1500000', ','), '1,500,000')
   assert.equal(unmask('Rp 1.500.000'), '1500000')
+  // Backspace di tengah masking tidak boleh memangkas nominal.
+  assert.equal(maskRibuan('1.500.00'), '150.000')
 })
 
 table<[string | Date, Parameters<typeof terbilangTanggal>[1]]>('terbilangTanggal', [
@@ -230,4 +232,63 @@ table<[string]>('terbilangWaktu', [
 test('waktu tidak valid', () => {
   assert.throws(() => terbilangWaktu('24:00'), RangeError)
   assert.throws(() => terbilangWaktu('jam 5'), TypeError)
+})
+
+test('keamanan: input raksasa ditolak cepat (anti-DoS)', () => {
+  const start = performance.now()
+  assert.throws(() => terbilang('9'.repeat(1001)), RangeError)
+  assert.throws(() => terbilang('9'.repeat(10_000_000)), RangeError)
+  assert.throws(() => terbilang(10n ** 2000n), RangeError)
+  assert.throws(() => formatAngka('9'.repeat(5000)), RangeError)
+  assert.ok(terbilang('9'.repeat(1000)).length > 0)
+  assert.equal(maskRibuan('9'.repeat(1_000_000)).replace(/\./g, '').length, 1000)
+  assert.ok(performance.now() - start < 1000, 'terlalu lambat')
+})
+
+test('keamanan: decimals divalidasi', () => {
+  for (const decimals of [-1, 1.5, NaN, 101, 1e7]) {
+    assert.throws(() => formatAngka(1, { decimals }), RangeError, String(decimals))
+    assert.throws(() => formatRingkas(1000, { decimals }), RangeError, String(decimals))
+  }
+})
+
+test('keamanan: kode mata uang hanya dari tabel (tanpa lookup prototype)', () => {
+  for (const currency of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'idr', 'XXX']) {
+    assert.throws(() => terbilang(1000, { currency: currency as 'IDR' }), TypeError, currency)
+    assert.throws(() => formatUang(1000, { currency: currency as 'IDR' }), TypeError, currency)
+  }
+  assert.equal(Object.isFrozen(CURRENCIES), false) // tabel dikopi saat dipakai, bukan dimutasi
+  const before = JSON.stringify(CURRENCIES)
+  formatUang(1, { symbol: 'X', ...JSON.parse('{"__proto__": {"polluted": true}}') })
+  assert.equal(JSON.stringify(CURRENCIES), before)
+  assert.equal(({} as Record<string, unknown>).polluted, undefined)
+})
+
+test('keamanan: number di luar presisi aman ditolak, bukan salah diam-diam', () => {
+  assert.throws(() => terbilang(9007199254740993), RangeError)
+  assert.throws(() => terbilang(1e21), RangeError)
+  assert.throws(() => terbilang(-1e300), RangeError)
+  assert.equal(terbilang('9007199254740993'), 'sembilan kuadriliun tujuh triliun seratus sembilan puluh sembilan miliar dua ratus lima puluh empat juta tujuh ratus empat puluh ribu sembilan ratus sembilan puluh tiga')
+})
+
+test('keamanan: tipe input asing ditolak dengan error jelas', () => {
+  for (const v of [null, undefined, true, {}, [], new String('5'), Symbol('x')]) {
+    assert.throws(() => terbilang(v as unknown as Angka), TypeError)
+  }
+  for (const t of [1430, null, {}, new Date('x')]) {
+    assert.throws(() => terbilangWaktu(t as unknown as string))
+    assert.throws(() => terbilangTanggal(t as unknown as string))
+  }
+})
+
+test('tempel nominal berformat: desimal dibuang, bukan digabung', () => {
+  assert.equal(unmask('Rp 1.500.000,75'), '1500000')
+  assert.equal(unmask('1.500,5'), '1500')
+  assert.equal(unmask('-500'), '500')
+  assert.equal(maskRibuan('1,500,000.00', ','), '1,500,000')
+})
+
+test('tahun 0-99 tidak dipetakan ke 1900-an', () => {
+  assert.equal(terbilangTanggal('0050-01-01'), 'Sabtu, tanggal satu bulan Januari tahun lima puluh')
+  assert.throws(() => terbilangTanggal('2026-09-17<script>'), TypeError)
 })

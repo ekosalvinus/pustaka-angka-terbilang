@@ -59,9 +59,9 @@ terbilang(10n ** 100n) // "satu googol"
 
 > `"1.000"` (hanya satu titik, tanpa koma) dibaca **satu koma nol nol nol**. Untuk ribuan, tulis `"1000"` atau `"1.000,00"`.
 >
-> Angka di atas `Number.MAX_SAFE_INTEGER` sebaiknya dikirim sebagai string atau BigInt agar tidak kehilangan presisi.
+> `number` di atas `Number.MAX_SAFE_INTEGER` (9.007.199.254.740.991) melempar `RangeError`, karena presisinya sudah hilang sebelum masuk ke fungsi (nominal bisa salah tanpa ketahuan). Kirim angka sebesar itu sebagai string atau BigInt.
 
-Input tidak valid melempar `TypeError`.
+Input tidak valid melempar `TypeError`. Input lebih dari 1.000 karakter/digit melempar `RangeError`.
 
 ### Opsi
 
@@ -264,7 +264,7 @@ Hasil render:
 </div>
 ```
 
-Atribut (id, name, placeholder, required, dll.) diteruskan ke `<input>`. Posisi kursor tetap terjaga saat titik ribuan disisipkan. Komponen tidak membawa CSS; tata dengan kelas `terbilang-input*`. Prop `currency` bisa diganti, misal `currency="USD"`.
+Atribut (id, name, placeholder, required, listener, dll.) diteruskan ke `<input>`. Posisi kursor tetap terjaga saat titik ribuan disisipkan. Komponen tidak membawa CSS; tata dengan kelas `terbilang-input*`. Prop `currency` bisa diganti, misal `currency="USD"`.
 
 ### Nuxt
 
@@ -403,7 +403,21 @@ npm test         # butuh Node ≥ 22.6 (menjalankan TypeScript langsung)
 npm run build    # hasil ke dist/
 npm publish      # otomatis typecheck + test + build lebih dulu
 ```
+
+Sebelum publish: aktifkan 2FA di akun npm (`npm profile enable-2fa auth-and-writes`) dan cek isi paket dengan `npm pack --dry-run`. Jika publish lewat GitHub Actions, gunakan `npm publish --provenance --access public`.
  
+## Keamanan
+
+- **Bukan pengganti validasi server.** Masking dan terbilang hanya tampilan. Nominal tetap harus divalidasi ulang di backend (tipe, batas minimum/maksimum, tanda negatif).
+- **Hasil berupa teks biasa, tidak di-escape untuk HTML.** Di Vue/React/Svelte/Astro (interpolasi `{{ }}` / `{}`) aman. Jangan masukkan ke `v-html`, `innerHTML`, `dangerouslySetInnerHTML`, atau `set:html`, terutama bila `prefix`/`suffix` berasal dari input pengguna.
+- **Batas input.** String/BigInt maksimal 1.000 karakter/digit dan `decimals` maksimal 100, supaya input raksasa dari pengguna tidak membuat server SSR hang (DoS).
+- **Presisi uang.** Hindari aritmetika `number` untuk nominal (`0.1 + 0.2`); simpan dalam satuan terkecil atau string, lalu kirim ke fungsi ini sebagai string/BigInt.
+- **`unmask` / `<InputRupiah>`** hanya menghasilkan bilangan bulat non-negatif. Tanda `-` dibuang, dan bagian setelah pemisah desimal terakhir dibuang (`"1.500.000,75"` → `"1500000"`). Tempelan dengan format negara lain (misal `"1,500,000.00"` di input Rupiah) bisa terbaca berbeda; terbilang live di bawah input membantu pengguna melihatnya.
+- **Prop `tag` pada `<Terbilang>`** menolak elemen berbahaya (`script`, `style`, `iframe`, `svg`, dll.) dan nama tag tidak valid; semuanya diganti `span`.
+- **Kode mata uang** dicek terhadap tabel milik sendiri; `'__proto__'`, `'constructor'`, dan kode tak dikenal melempar `TypeError`.
+
+Laporkan celah keamanan lewat email ke slvns.dev@gmail.com, jangan lewat issue publik.
+
 ## Lisensi
 
 [MIT](./LICENSE)

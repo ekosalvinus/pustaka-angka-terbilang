@@ -20,12 +20,14 @@ export function terbilangTanggal(t: Tanggal, o: Gaya = {}): string {
   let y: number, m: number, d: number
   if (t instanceof Date) [y, m, d] = [t.getFullYear(), t.getMonth() + 1, t.getDate()]
   else {
-    const r = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
-    if (!r) throw new TypeError(`Format tanggal harus YYYY-MM-DD: ${t}`)
+    const r = typeof t === 'string' ? /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(t) : null
+    if (!r) throw new TypeError(`Format tanggal harus YYYY-MM-DD: ${String(t)}`)
     ;[y, m, d] = [Number(r[1]), Number(r[2]), Number(r[3])]
   }
-  const date = new Date(Date.UTC(y, m - 1, d))
-  if (Number.isNaN(date.getTime()) || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) {
+  const date = new Date(0)
+  // setUTCFullYear, bukan Date.UTC: Date.UTC memetakan tahun 0-99 ke 1900-1999.
+  date.setUTCFullYear(y, m - 1, d)
+  if (Number.isNaN(date.getTime()) || date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) {
     throw new RangeError(`Tanggal tidak valid: ${String(t)}`)
   }
   return gaya(`${HARI[date.getUTCDay()]}, tanggal ${kata(d)} bulan ${BULAN[m - 1]} tahun ${kata(y)}`, o)
@@ -38,11 +40,11 @@ export function terbilangWaktu(t: Tanggal, o: Gaya = {}): string {
   let h: number, mi: number, s: number
   if (t instanceof Date) [h, mi, s] = [t.getHours(), t.getMinutes(), t.getSeconds()]
   else {
-    const r = /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?$/.exec(t.trim())
-    if (!r) throw new TypeError(`Format waktu harus HH:mm atau HH:mm:ss: ${t}`)
+    const r = typeof t === 'string' ? /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?$/.exec(t.trim()) : null
+    if (!r) throw new TypeError(`Format waktu harus HH:mm atau HH:mm:ss: ${String(t)}`)
     ;[h, mi, s] = [Number(r[1]), Number(r[2]), Number(r[3] ?? 0)]
   }
-  if (h > 23 || mi > 59 || s > 59) throw new RangeError(`Waktu tidak valid: ${String(t)}`)
+  if (!(h <= 23 && mi <= 59 && s <= 59)) throw new RangeError(`Waktu tidak valid: ${String(t)}`)
   let out = 'pukul ' + kata(h)
   if (mi || s) out += ' lewat'
   if (mi) out += ` ${kata(mi)} menit`

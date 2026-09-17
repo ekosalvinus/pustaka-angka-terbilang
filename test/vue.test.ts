@@ -47,3 +47,24 @@ test('<InputRupiah> render di SSR dengan nilai termasking', async () => {
   assert.match(html, />Rp</)
   assert.match(html, /Satu Juta Lima Ratus Ribu Rupiah/)
 })
+
+test('keamanan: <Terbilang> menolak tag berbahaya (XSS via tag)', async () => {
+  for (const tag of ['script', 'SCRIPT', 'style', 'iframe', 'img onerror=alert(1)', 'svg', 'a"><script>']) {
+    const app = createSSRApp({ render: () => h(Terbilang, { value: 1, tag, prefix: '<b>alert(1)//' }) })
+    app.config.warnHandler = () => {}
+    const html = await renderToString(app)
+    assert.equal(html, '<span>&lt;b&gt;alert(1)//satu</span>', tag)
+  }
+})
+
+test('keamanan: <InputRupiah> dengan currency tidak dikenal tidak crash', async () => {
+  const app = createSSRApp({ render: () => h(InputRupiah, { modelValue: '1000', currency: '__proto__' }) })
+  app.config.warnHandler = () => {}
+  const html = await renderToString(app)
+  assert.match(html, />Rp</)
+  assert.match(html, /seribu rupiah/)
+})
+
+test('useTerbilang: input raksasa jadi string kosong, bukan hang', () => {
+  assert.equal(useTerbilang('9'.repeat(100_000)).value, '')
+})

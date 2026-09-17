@@ -1,5 +1,5 @@
-import { gaya, parse, round, SKALA, type Angka, type Gaya } from './core.ts'
-import { CURRENCIES, type Currency, type CurrencyCode } from './currency.ts'
+import { checkDecimals, gaya, MAX_LENGTH, parse, round, SKALA, type Angka, type Gaya } from './core.ts'
+import { getCurrency, type Currency, type CurrencyCode } from './currency.ts'
 
 export interface FormatAngkaOptions {
   /** Jumlah digit desimal (dibulatkan). Default: apa adanya. */
@@ -28,7 +28,7 @@ export interface FormatUangOptions extends Partial<Currency> {
 /** @example formatUang(150000) // "Rp 150.000", formatUang(9.5, { currency: 'USD' }) // "US$ 9.50" */
 export function formatUang(v: Angka, o: FormatUangOptions = {}): string {
   const { currency = 'IDR', space = true, ...rest } = o
-  const c: Currency = { ...CURRENCIES[currency], ...rest }
+  const c: Currency = { ...getCurrency(currency), ...rest }
   const num = formatAngka(v, c)
   const neg = num.startsWith('-') ? '-' : ''
   const sp = space ? ' ' : ''
@@ -49,7 +49,8 @@ export interface FormatRingkasOptions extends Gaya {
 
 /** @example formatRingkas(1500000) // "1,5 Jt", formatRingkas(1e9, { style: 'long' }) // "1 Miliar" */
 export function formatRingkas(v: Angka, o: FormatRingkasOptions = {}): string {
-  const { style = 'short', decimals = 1, decimal = ',' } = o
+  const { style = 'short', decimal = ',' } = o
+  const decimals = checkDecimals(o.decimals ?? 1)
   const p = parse(v)
   const names = style === 'long' ? PANJANG : PENDEK
   const d = p.int.toString()
@@ -61,12 +62,22 @@ export function formatRingkas(v: Angka, o: FormatRingkasOptions = {}): string {
   return gaya(sign + formatAngka(d.slice(0, cut)) + (frac ? decimal + frac : '') + ' ' + names[i], o)
 }
 
-/** Ambil digit saja, tanpa nol di depan. @example unmask("Rp 1.500.000") // "1500000" */
-export function unmask(s: string): string {
-  return s.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/**
+ * Ambil digit bilangan bulat saja, tanpa nol di depan. Untuk input nominal (selalu non-negatif, tanda `-` dibuang).
+ * Bagian setelah pemisah desimal terakhir dibuang dulu, supaya tempelan `"1.500.000,75"`
+ * tidak berubah jadi `150000075`. Panjang dibatasi `MAX_LENGTH`.
+ * @example unmask("Rp 1.500.000,00") // "1500000"
+ */
+export function unmask(s: string, decimal = ','): string {
+  return String(s).slice(0, MAX_LENGTH)
+    .replace(new RegExp(escapeRe(decimal) + '\\d*\\s*$'), '')
+    .replace(/\D/g, '')
+    .replace(/^0+(?=\d)/, '')
 }
 
 /** Masking ribuan untuk input. @example maskRibuan("1500000") // "1.500.000" */
-export function maskRibuan(s: string, thousand = '.'): string {
-  return unmask(s).replace(/\B(?=(\d{3})+(?!\d))/g, thousand)
+export function maskRibuan(s: string, thousand = '.', decimal = thousand === '.' ? ',' : '.'): string {
+  return unmask(s, decimal).replace(/\B(?=(\d{3})+(?!\d))/g, thousand)
 }
