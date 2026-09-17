@@ -416,6 +416,7 @@ Sebelum publish: aktifkan 2FA di akun npm (`npm profile enable-2fa auth-and-writ
 - **Prop `tag` pada `<Terbilang>`** menolak elemen berbahaya (`script`, `style`, `iframe`, `svg`, dll.) dan nama tag tidak valid; semuanya diganti `span`.
 - **Kode mata uang** dicek terhadap tabel milik sendiri; `'__proto__'`, `'constructor'`, dan kode tak dikenal melempar `TypeError`.
 
+## Security Report
 Laporkan celah keamanan lewat email ke slvns.dev@gmail.com, jangan lewat issue publik.
 
 ## Lisensi
