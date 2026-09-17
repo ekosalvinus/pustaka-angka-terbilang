@@ -15,6 +15,7 @@ Ubah angka jadi kata dalam bahasa Indonesia, untuk kwitansi, akad kredit, surat 
 npm install pustaka-angka-terbilang
 # atau
 pnpm add pustaka-angka-terbilang
+# atau
 yarn add pustaka-angka-terbilang
 ```
 
