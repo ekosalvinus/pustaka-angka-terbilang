@@ -403,7 +403,7 @@ npm test         # butuh Node ≥ 22.6 (menjalankan TypeScript langsung)
 npm run build    # hasil ke dist/
 npm publish      # otomatis typecheck + test + build lebih dulu
 ```
-
+ 
 ## Lisensi
 
 [MIT](./LICENSE)
