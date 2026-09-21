@@ -1,6 +1,6 @@
 {
   "name": "pustaka-angka-terbilang",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Angka terbilang bahasa Indonesia: rupiah & mata uang ASEAN, format ringkas (Rb/Jt/M/T), persen, bilangan tingkat, tanggal legal. Zero dependency, ESM, TypeScript, adapter Vue.",
   "keywords": [
     "terbilang",
