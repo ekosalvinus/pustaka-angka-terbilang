@@ -395,29 +395,19 @@ Terbilang: ${terbilang(pinjaman, { currency: 'IDR', case: 'title', prefix: '# ',
 | `parse(v)` | `{ neg, int: bigint, frac: string }` |
 | `CURRENCIES` | tabel mata uang |
 
-## Pengembangan
 
-```bash
-npm install
-npm test         # butuh Node ≥ 22.6 (menjalankan TypeScript langsung)
-npm run build    # hasil ke dist/
-npm publish      # otomatis typecheck + test + build lebih dulu
-```
- 
-Sebelum publish: aktifkan 2FA di akun npm (`npm profile enable-2fa auth-and-writes`) dan cek isi paket dengan `npm pack --dry-run`. Jika publish lewat GitHub Actions, gunakan `npm publish --provenance --access public`.
- 
 ## Keamanan
 
-- **Bukan pengganti validasi server.** Masking dan terbilang hanya tampilan. Nominal tetap harus divalidasi ulang di backend (tipe, batas minimum/maksimum, tanda negatif).
+- Pustaka atau library ini **Bukan pengganti validasi server.** Masking dan terbilang hanya tampilan. Nominal tetap harus divalidasi ulang di backend (tipe, batas minimum/maksimum, tanda negatif).
 - **Hasil berupa teks biasa, tidak di-escape untuk HTML.** Di Vue/React/Svelte/Astro (interpolasi `{{ }}` / `{}`) aman. Jangan masukkan ke `v-html`, `innerHTML`, `dangerouslySetInnerHTML`, atau `set:html`, terutama bila `prefix`/`suffix` berasal dari input pengguna.
 - **Batas input.** String/BigInt maksimal 1.000 karakter/digit dan `decimals` maksimal 100, supaya input raksasa dari pengguna tidak membuat server SSR hang (DoS).
 - **Presisi uang.** Hindari aritmetika `number` untuk nominal (`0.1 + 0.2`); simpan dalam satuan terkecil atau string, lalu kirim ke fungsi ini sebagai string/BigInt.
 - **`unmask` / `<InputRupiah>`** hanya menghasilkan bilangan bulat non-negatif. Tanda `-` dibuang, dan bagian setelah pemisah desimal terakhir dibuang (`"1.500.000,75"` → `"1500000"`). Tempelan dengan format negara lain (misal `"1,500,000.00"` di input Rupiah) bisa terbaca berbeda; terbilang live di bawah input membantu pengguna melihatnya.
 - **Prop `tag` pada `<Terbilang>`** menolak elemen berbahaya (`script`, `style`, `iframe`, `svg`, dll.) dan nama tag tidak valid; semuanya diganti `span`.
-- **Kode mata uang** dicek terhadap tabel milik sendiri; `'__proto__'`, `'constructor'`, dan kode tak dikenal melempar `TypeError`.
+- **Kode mata uang** dicek terhadap tabel internal; `'__proto__'`, `'constructor'`, dan kode mata uang tak dikenal atau tidak terdaftar akan melempar `TypeError`.
 
 ## Security Report
-Laporkan celah keamanan lewat email ke slvns.dev@gmail.com, jangan lewat issue publik.
+Laporkan celah keamanan lewat email ke slvns.dev@gmail.com
 
 ## Lisensi
 
